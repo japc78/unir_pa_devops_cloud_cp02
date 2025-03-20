@@ -5,13 +5,13 @@ resource "azurerm_kubernetes_cluster" "aks" {
   dns_prefix          = "${var.prefix}aks-japc"
 
   default_node_pool {
-    name       = "default"
-    node_count = 1
-    vm_size    = "Standard_D2_v2"
+    name       = var.aks_node_pool_name
+    node_count = var.aks_node_pool_node_count
+    vm_size    = var.aks_node_pool_node_vm_size
   }
 
   identity {
-    type = "SystemAssigned"
+    type = var.aks_identity_type
   }
 
 
@@ -26,7 +26,7 @@ resource "azurerm_kubernetes_cluster" "aks" {
 
 resource "azurerm_role_assignment" "ra-perm" {
   principal_id         = azurerm_kubernetes_cluster.aks.identity[0].principal_id
-  role_definition_name = "AcrPull"
+  role_definition_name = var.aks_role_assignment_acr
   scope                = azurerm_container_registry.acr.id
 }
 

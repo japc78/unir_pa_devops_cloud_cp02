@@ -1,4 +1,4 @@
-resource "azurerm_virtual_network" "network" {
+resource "azurerm_virtual_network" "vm_network" {
   name                = "${var.prefix}vm-network"
   address_space       = ["10.0.0.0/16"]
   location            = azurerm_resource_group.rg.location
@@ -15,11 +15,11 @@ resource "azurerm_virtual_network" "network" {
 resource "azurerm_subnet" "subnet" {
   name                 = "${var.prefix}vm-subnet-internal"
   resource_group_name  = azurerm_resource_group.rg.name
-  virtual_network_name = azurerm_virtual_network.network.name
+  virtual_network_name = azurerm_virtual_network.vm_network.name
   address_prefixes     = ["10.0.2.0/24"]
 }
 
-resource "azurerm_network_interface_security_group_association" "nisg_association" {
-  network_interface_id      = azurerm_network_interface.nic.id
-  network_security_group_id = azurerm_network_security_group.network_sg.id
+resource "azurerm_network_interface_security_group_association" "vm_nisg_association" {
+  network_interface_id      = azurerm_network_interface.vm_nic.id
+  network_security_group_id = azurerm_network_security_group.vm_network_sg.id
 }

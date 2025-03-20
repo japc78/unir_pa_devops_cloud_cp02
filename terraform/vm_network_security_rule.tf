@@ -9,7 +9,7 @@ resource "azurerm_network_security_rule" "allow_http" {
   source_address_prefix       = "*"
   destination_address_prefix  = "*"
   resource_group_name = azurerm_resource_group.rg.name
-  network_security_group_name = azurerm_network_security_group.network_sg.name
+  network_security_group_name = azurerm_network_security_group.vm_network_sg.name
 }
 
 resource "azurerm_network_security_rule" "allow_https" {
@@ -23,7 +23,7 @@ resource "azurerm_network_security_rule" "allow_https" {
   source_address_prefix       = "*"
   destination_address_prefix  = "*"
   resource_group_name = azurerm_resource_group.rg.name
-  network_security_group_name = azurerm_network_security_group.network_sg.name
+  network_security_group_name = azurerm_network_security_group.vm_network_sg.name
 }
 
 resource "azurerm_network_security_rule" "allow_ssh" {
@@ -37,5 +37,5 @@ resource "azurerm_network_security_rule" "allow_ssh" {
   source_address_prefix       = "*"
   destination_address_prefix  = "*"
   resource_group_name = azurerm_resource_group.rg.name
-  network_security_group_name = azurerm_network_security_group.network_sg.name
+  network_security_group_name = azurerm_network_security_group.vm_network_sg.name
 }

@@ -16,7 +16,7 @@ provider "azurerm" {
 
 resource "azurerm_resource_group" "rg" {
   name     = "${var.prefix}rg"
-  location = "West Europe"
+  location = var.default_location
 
   tags = merge(
       var.default_tags,
