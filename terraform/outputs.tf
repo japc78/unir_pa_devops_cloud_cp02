@@ -33,7 +33,7 @@
     value       = azurerm_public_ip.aks_pip.ip_address
   }
 
-  output "aks_dns_name" {
+  output "aks_public_ip_dns_name" {
     description = "The DNS name of the public IP for the AKS cluster, used for configuring the Ingress. Provides the fully qualified domain name (FQDN)."
     value       = azurerm_public_ip.aks_pip.fqdn
   }
@@ -41,4 +41,9 @@
   output "azure_load_balancer_resource_group" {
     description = "The name of the resource group where the AKS load balancer and public IP are located, used for configuring the ingress-nginx controller. Provides the node resource group of the AKS cluster."
     value       = azurerm_kubernetes_cluster.aks.node_resource_group
+  }
+
+  output "aks_dns_name" {
+    description = "The DNS name of the AKS cluster, representing the fully qualified domain name (FQDN) of the Kubernetes API server. This is the endpoint used by tools like kubectl to communicate with the AKS control plane and manage the cluster."
+    value       = azurerm_kubernetes_cluster.aks.fqdn
   }

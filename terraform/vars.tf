@@ -7,7 +7,7 @@
 # General
   variable "default_location" {
     description = "The default Azure region where resources will be deployed, such as 'West Europe'."
-    default = "West Europe"
+    default = "westeurope"
   }
   variable "prefix" {
     type        = string
