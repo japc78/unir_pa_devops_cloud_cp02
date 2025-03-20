@@ -21,6 +21,18 @@
     value       = azurerm_public_ip.vm_pip.fqdn
   }
 
+  output "vm_admin_username" {
+    description = "The administrator username for the Linux virtual machine, used for SSH access. Marked as sensitive to prevent exposure in logs."
+    value = azurerm_linux_virtual_machine.vm.admin_username
+    sensitive = true
+  }
+
+  output "vm_ssh_private_key" {
+    description = "The private SSH key for the Linux virtual machine, used for secure authentication via SSH. Marked as sensitive to prevent exposure in logs."
+    value =tls_private_key.vm_ssh_key.private_key_pem
+    sensitive = true
+  }
+
 # AKS
   output "aks_kube_config" {
     description = "The raw kubeconfig file for the AKS cluster, used to authenticate and manage the cluster via kubectl. Stored as sensitive data."

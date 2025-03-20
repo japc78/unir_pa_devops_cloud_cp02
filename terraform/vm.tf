@@ -8,7 +8,7 @@ resource "azurerm_linux_virtual_machine" "vm" {
 
   admin_ssh_key {
     username   = "${var.prefix}vm-${var.vm_admin_username}"
-    public_key = file("~/.ssh/id_rsa.pub")
+    public_key = tls_private_key.vm_ssh_key.public_key_openssh
   }
 
   os_disk {
@@ -29,4 +29,6 @@ resource "azurerm_linux_virtual_machine" "vm" {
       name = "${var.prefix}vm"
     }
   )
+
+  depends_on = [ tls_private_key.vm_ssh_key ]
 }
