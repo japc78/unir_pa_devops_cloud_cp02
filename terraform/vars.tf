@@ -25,6 +25,11 @@
     }
   }
 
+  variable "base_path" {
+    description = "The base directory path for the project, which contains both 'terraform' and 'ansible' folders. This variable is used to define the location where the dynamic Ansible inventory file will be generated, typically under the 'ansible' folder."
+    default = "/myproyect"
+  }
+
 # ACR
   variable "acr_admin_enable" {
     description = "Enables or disables the admin user for the Azure Container Registry. Set to 'true' by default."

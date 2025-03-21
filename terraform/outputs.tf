@@ -33,6 +33,12 @@
     sensitive = true
   }
 
+  output "vm_ssh_private_key_path" {
+    description = "The private SSH key for the Linux virtual machine, used for secure authentication via SSH. Marked as sensitive to prevent exposure in logs."
+    value =local_file.private_key.filename
+    sensitive = true
+  }
+
 # AKS
   output "aks_kube_config" {
     description = "The raw kubeconfig file for the AKS cluster, used to authenticate and manage the cluster via kubectl. Stored as sensitive data."
@@ -50,7 +56,7 @@
     value       = azurerm_public_ip.aks_pip.fqdn
   }
 
-  output "azure_load_balancer_resource_group" {
+  output "aks_azure_load_balancer_resource_group" {
     description = "The name of the resource group where the AKS load balancer and public IP are located, used for configuring the ingress-nginx controller. Provides the node resource group of the AKS cluster."
     value       = azurerm_kubernetes_cluster.aks.node_resource_group
   }

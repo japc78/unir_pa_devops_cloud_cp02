@@ -1,0 +1,13 @@
+[vm]
+${vm_dns_name} ansible_user=${vm_admin_username} ansible_ssh_private_key_file=${vm_ssh_private_key}
+
+[all:vars]
+acr_login_server=${acr_login_server}
+acr_admin_username=${acr_admin_username}
+acr_admin_password=${acr_admin_password}
+aks_public_ip_address=${aks_public_ip_address}
+aks_public_ip_dns_name=${aks_public_ip_dns_name}
+aks_azure_load_balancer_resource_group=${aks_azure_load_balancer_resource_group}
+
+[localhost]
+127.0.0.1 ansible_connection=local

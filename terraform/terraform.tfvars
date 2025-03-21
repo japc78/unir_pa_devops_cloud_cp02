@@ -6,3 +6,4 @@ default_tags = {
 }
 vm_pip_dns_name = "japc"
 aks_node_pool_name = "main"
+base_path="/home/ubuntu/ws/unir_pa_devops_cloud_cp02"
