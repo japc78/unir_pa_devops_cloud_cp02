@@ -1,11 +1,11 @@
 resource "local_file" "inventory" {
   content  = local.inventory_content
-  filename = "${var.base_path}/ansible/inventory"
+  filename = "${var.base_path}/ansible/inventories/inventory"
 }
 
 resource "local_file" "private_key" {
   content         = tls_private_key.vm_ssh_key.private_key_pem
-  filename        = "${var.base_path}/ansible/ssh_key.pem"
+  filename        = "${var.base_path}/ansible/ssh_keys/vm_ssh_key.pem"
   file_permission = "0600"
 }
 
