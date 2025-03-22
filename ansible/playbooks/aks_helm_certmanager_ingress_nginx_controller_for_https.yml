@@ -1,0 +1,135 @@
+---
+- name: Deploy cert-manager
+  hosts: localhost
+  tasks:
+    - name: Ensure Helm is installed via Snap
+      block:
+        - name: Check if Helm is already installed
+          ansible.builtin.stat:
+            path: /snap/bin/helm
+          register: helm_stat
+
+        - name: Ensure Snap is installed
+          ansible.builtin.apt:
+            name: snapd
+            state: present
+            update_cache: yes
+          become: yes
+          when: not helm_stat.stat.exists
+
+        - name: Install Helm via Snap
+          ansible.builtin.snap:
+            name: helm
+            classic: yes
+            state: present
+          become: yes
+          when: not helm_stat.stat.exists
+
+    - name: Add Jetstack chart repository for cert-manager
+      kubernetes.core.helm_repository:
+        name: jetstack
+        repo_url: "https://charts.jetstack.io"
+
+    - name: Deploy cert-manager using Helm in cert-manager namespace
+      kubernetes.core.helm:
+        name: cert-manager
+        chart_ref: jetstack/cert-manager
+        chart_version: "v1.14.5"
+        release_namespace: cert-manager
+        create_namespace: yes
+        state: present
+        values:
+          installCRDs: true
+          replicaCount: 2
+        wait: yes
+        wait_timeout: 300s
+
+    # ClusterIssuer: A cert-manager resource that defines a cluster-wide certificate authority (e.g., Let’s Encrypt) to automatically issue TLS certificates for Ingress resources using validation methods like HTTP-01 or DNS-01.
+    - name: Deploy ClusterIssuer
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: cert-manager.io/v1
+          kind: ClusterIssuer
+          metadata:
+            name: letsencrypt-http
+          spec:
+            acme:
+              server: https://acme-v02.api.letsencrypt.org/directory
+              email: japc.dev@gmail.com
+              privateKeySecretRef:
+                name: letsencrypt-http-private-key
+              solvers:
+              - http01:
+                  ingress:
+                    class: nginx
+
+- name: Deploy nginx-ingress
+  hosts: localhost
+  tasks:
+    - name: Add ingress-nginx chart repository
+      kubernetes.core.helm_repository:
+        name: ingress-nginx
+        repo_url: "https://kubernetes.github.io/ingress-nginx"
+
+    - name: Deploy nginx-ingress-controller
+      kubernetes.core.helm:
+        name: ingress-nginx
+        chart_ref: ingress-nginx/ingress-nginx
+        release_namespace: ingress-nginx
+        create_namespace: yes
+        state: present
+        values:
+          controller:
+            admissionWebhooks:
+              enabled: false
+            service:
+              ports:
+                http: 80
+                https: 443
+              targetPorts:
+                http: http
+                https: https
+              type: LoadBalancer
+              # Configuration to assign a public IP to the LoadBalancer: Specifies the Azure resource group and the static IPv4 address for the LoadBalancer service, ensuring the Ingress Controller uses a fixed public IP.
+              annotations:
+                service.beta.kubernetes.io/azure-load-balancer-resource-group: "{{ aks_azure_load_balancer_resource_group }}"
+                service.beta.kubernetes.io/azure-load-balancer-ipv4: "{{ aks_public_ip_address }}"
+              ########
+                service.beta.kubernetes.io/azure-load-balancer-health-probe-request-path: "/healthz"
+              externalTrafficPolicy: Local
+              loadBalancerIP: "{{ aks_public_ip_address }}"
+        wait: yes
+        wait_timeout: 300s
+
+    - name: Deploy WordPress Ingress
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: networking.k8s.io/v1
+          kind: Ingress
+          metadata:
+            name: nginx
+            namespace: wordpress
+            annotations:
+              nginx.ingress.kubernetes.io/ssl-redirect: "true"
+              cert-manager.io/cluster-issuer: "letsencrypt-http"
+              nginx.ingress.kubernetes.io/rewrite-target: /
+          spec:
+            ingressClassName: nginx
+            tls:
+            - hosts:
+              - "{{ aks_public_ip_dns_name }}"
+              secretName: wordpress-tls
+            rules:
+            - host: "{{ aks_public_ip_dns_name }}"
+              http:
+                paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: wordpress
+                      port:
+                        number: 80
+

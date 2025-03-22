@@ -1,0 +1,202 @@
+---
+- name: Deploy WordPress on AKS with ingress and cert-manager
+  hosts: localhost
+  become: yes
+
+  vars:
+    wordpress_namespace: wordpress
+    expected_kube_context: "{{ aks_kube_context }}"
+    acr_image_app_workpress: "{{ acr_login_server }}/app/unir-pa-devops-cp2-wordpress:casopractico2"
+    acr_image_bd_mysql: "{{ acr_login_server }}/db/unir-pa-devops-cp2-mysql:casopractico2"
+
+
+  environment:
+    KUBECONFIG: "{{ aks_kube_config_path }}"
+
+  pre_tasks:
+  - name: Install kubectl via Snap
+    become: yes
+    community.general.snap:
+      name: kubectl
+      classic: true
+      state: present
+
+  tasks:
+    - name: Create WordPress namespace
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Namespace
+          metadata:
+            name: "{{ wordpress_namespace }}"
+
+    - name: Create MySQL password secret
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          apiVersion: v1
+          kind: Secret
+          metadata:
+            name: mysql-pass
+            namespace: "{{ wordpress_namespace }}"
+          type: Opaque
+          data:
+            password: "{{ acr_admin_password | b64encode }}"
+
+    - name: Deploy MySQL for WordPress
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          - apiVersion: v1
+            kind: Service
+            metadata:
+              name: wordpress-mysql
+              namespace: "{{ wordpress_namespace }}"
+              labels:
+                app: wordpress
+            spec:
+              ports:
+                - port: 3306
+              selector:
+                app: wordpress
+                tier: mysql
+              clusterIP: None
+          - apiVersion: v1
+            kind: PersistentVolumeClaim
+            metadata:
+              name: mysql-pv-claim
+              namespace: "{{ wordpress_namespace }}"
+              labels:
+                app: wordpress
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Gi
+          - apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: wordpress-mysql
+              namespace: "{{ wordpress_namespace }}"
+              labels:
+                app: wordpress
+            spec:
+              selector:
+                matchLabels:
+                  app: wordpress
+                  tier: mysql
+              strategy:
+                type: Recreate
+              template:
+                metadata:
+                  labels:
+                    app: wordpress
+                    tier: mysql
+                spec:
+                  containers:
+                  - image: "{{ acr_image_bd_mysql }}"
+                    name: mysql
+                    env:
+                    - name: MYSQL_ROOT_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: mysql-pass
+                          key: password
+                    - name: MYSQL_DATABASE
+                      value: wordpress
+                    - name: MYSQL_USER
+                      value: wordpress
+                    - name: MYSQL_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: mysql-pass
+                          key: password
+                    ports:
+                    - containerPort: 3306
+                      name: mysql
+                    volumeMounts:
+                    - name: mysql-persistent-storage
+                      mountPath: /var/lib/mysql
+                  volumes:
+                  - name: mysql-persistent-storage
+                    persistentVolumeClaim:
+                      claimName: mysql-pv-claim
+
+    - name: Deploy WordPress
+      kubernetes.core.k8s:
+        state: present
+        definition:
+          - apiVersion: v1
+            kind: Service
+            metadata:
+              name: wordpress
+              namespace: "{{ wordpress_namespace }}"
+              labels:
+                app: wordpress
+            spec:
+              ports:
+                - port: 80
+              selector:
+                app: wordpress
+                tier: frontend
+              type: ClusterIP
+          - apiVersion: v1
+            kind: PersistentVolumeClaim
+            metadata:
+              name: wp-pv-claim
+              namespace: "{{ wordpress_namespace }}"
+              labels:
+                app: wordpress
+            spec:
+              accessModes:
+                - ReadWriteOnce
+              resources:
+                requests:
+                  storage: 20Gi
+          - apiVersion: apps/v1
+            kind: Deployment
+            metadata:
+              name: wordpress
+              namespace: "{{ wordpress_namespace }}"
+              labels:
+                app: wordpress
+            spec:
+              selector:
+                matchLabels:
+                  app: wordpress
+                  tier: frontend
+              strategy:
+                type: Recreate
+              template:
+                metadata:
+                  labels:
+                    app: wordpress
+                    tier: frontend
+                spec:
+                  containers:
+                  - image: "{{ acr_image_app_workpress }}"
+                    name: wordpress
+                    env:
+                    - name: WORDPRESS_DB_HOST
+                      value: wordpress-mysql
+                    - name: WORDPRESS_DB_PASSWORD
+                      valueFrom:
+                        secretKeyRef:
+                          name: mysql-pass
+                          key: password
+                    - name: WORDPRESS_DB_USER
+                      value: wordpress
+                    - name: WORDPRESS_DB_NAME  # Añadido para consistencia
+                      value: wordpress
+                    ports:
+                    - containerPort: 80
+                      name: wordpress
+                    volumeMounts:
+                    - name: wordpress-persistent-storage
+                      mountPath: /var/www/html
+                  volumes:
+                  - name: wordpress-persistent-storage
+                    persistentVolumeClaim:
+                      claimName: wp-pv-claim

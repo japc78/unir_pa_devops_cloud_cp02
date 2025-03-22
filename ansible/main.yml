@@ -1,7 +1,11 @@
 ---
 - import_playbook: playbooks/localhost_check_podman_is_installed.yml
 - import_playbook: playbooks/sync-images-to-acr.yml
+
 - import_playbook: playbooks/vm_ping.yml
 # - import_playbook: playbooks/vm_deploy_nginx_with_podman.yml
 - import_playbook: playbooks/vm_deploy_nginx_https_selfsigned.yml
-- import_playbook: playbooks/aks_deploy_wordpress_loadbalancer.yml
+
+# - import_playbook: playbooks/aks_deploy_wordpress_loadbalancer.yml
+- import_playbook: playbooks/aks_helm_certmanager_ingress_nginx_controller_for_https.yml
+- import_playbook: playbooks/aks_deploy_wordpress_nginx_contrroller_https.yml
