@@ -1,0 +1,20 @@
+---
+- name: Check Podman is installed on Ubuntu 24.04
+  hosts: localhost
+  become: yes
+  tasks:
+    - name: Install Podman
+      ansible.builtin.apt:
+        name: podman
+        state: present
+        update_cache: yes
+
+    - name: Gather package facts
+      ansible.builtin.package_facts:
+        manager: apt
+
+    - name: Display Podman version
+      ansible.builtin.debug:
+        msg: "Podman version: {{ ansible_facts.packages['podman'][0].version }}"
+      when: "'podman' in ansible_facts.packages"
+      failed_when: "'podman' not in ansible_facts.packages"

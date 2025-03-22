@@ -1,0 +1,60 @@
+---
+- name: Manage images and upload them to ACR
+  hosts: localhost
+  collections:
+    - containers.podman
+  tasks:
+    - name: Download nginx image from docker hub
+      podman_image:
+        name: docker.io/japcdev/unir-pa-devops-cp2-nginx:latest
+        state: present
+
+    - name: Download mysql image from docker hub
+      podman_image:
+        name: docker.io/mysql:8.0
+        state: present
+
+    - name: Download wordpress image from docker hub
+      podman_image:
+        name: docker.io/wordpress:6.2.1-apache
+        state: present
+
+    - name: Login en ACR
+      command: podman login {{ acr_admin_username }}.azurecr.io --username {{ acr_admin_username }} --password {{ acr_admin_password }}
+      no_log: true
+
+    - name: Tag nginx image for ACR
+      podman_tag:
+        image: docker.io/japcdev/unir-pa-devops-cp2-nginx:latest
+        target_names:
+          - "{{ acr_admin_username }}.azurecr.io/server/unir-pa-devops-cp2-nginx:casopractico2"
+
+    - name: Tag mysql image for ACR
+      podman_tag:
+        image: docker.io/mysql:8.0
+        target_names:
+          - "{{ acr_admin_username }}.azurecr.io/db/unir-pa-devops-cp2-mysql:casopractico2"
+
+    - name: Tag wordpress image for ACR
+      podman_tag:
+        image: docker.io/wordpress:6.2.1-apache
+        target_names:
+          - "{{ acr_admin_username }}.azurecr.io/app/unir-pa-devops-cp2-wordpress:casopractico2"
+
+    - name: Push nginx image to ACR
+      podman_image:
+        name: "{{ acr_admin_username }}.azurecr.io/server/unir-pa-devops-cp2-nginx:casopractico2"
+        push: yes
+        tls_verify: false
+
+    - name: Push mysql image to ACR
+      podman_image:
+        name: "{{ acr_admin_username }}.azurecr.io/db/unir-pa-devops-cp2-mysql:casopractico2"
+        push: yes
+        tls_verify: false
+
+    - name: Push wordpress image to ACR
+      podman_image:
+        name: "{{ acr_admin_username }}.azurecr.io/app/unir-pa-devops-cp2-wordpress:casopractico2"
+        push: yes
+        tls_verify: false

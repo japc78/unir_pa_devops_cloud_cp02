@@ -1,0 +1,4 @@
+---
+- import_playbook: playbooks/check-podman-installed.yml
+- import_playbook: playbooks/sync-images-to-acr.yml
+- import_playbook: playbooks/vm_ping.yml
