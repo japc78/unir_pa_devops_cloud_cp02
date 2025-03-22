@@ -34,3 +34,4 @@ terraform.rc
 
 *.pem
 inventory
+**/kube_config/*.config
