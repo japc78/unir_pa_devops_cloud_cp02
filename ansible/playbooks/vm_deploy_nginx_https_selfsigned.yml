@@ -1,0 +1,108 @@
+---
+- name: Deploy NGINX with HTTPS and self-signed certificate
+  hosts: vm
+  become: true
+  collections:
+    - containers.podman
+    - community.crypto
+
+  vars:
+    fqdn: "{{ vm_dns_name }}"
+    acr_registry: "{{ acr_admin_username }}.azurecr.io"
+    acr_username: "{{ acr_admin_username }}"
+    acr_password: "{{ acr_admin_password }}"
+    acr_image: server/unir-pa-devops-cp2-nginx:casopractico2
+    cert_dir: /etc/nginx/certs
+    conf_dir: /etc/nginx/conf
+
+  tasks:
+
+    - name: Install Podman
+      apt:
+        name: podman
+        state: present
+        update_cache: yes
+
+    - name: ACR login
+      containers.podman.podman_login:
+        registry: "{{ acr_registry }}"
+        username: "{{ acr_username }}"
+        password: "{{ acr_password }}"
+
+    - name: Pull imagen from ACR
+      containers.podman.podman_image:
+        name: "{{ acr_registry }}/{{ acr_image }}"
+        username: "{{ acr_username }}"
+        password: "{{ acr_password }}"
+        tls_verify: true
+        state: present
+
+    - name: Create certificate directory
+      file:
+        path: "{{ cert_dir }}"
+        state: directory
+        mode: '0755'
+
+    # https://docs.ansible.com/ansible/latest/collections/community/crypto/docsite/guide_selfsigned.html
+    - name: Create self-signed private key
+      community.crypto.openssl_privatekey:
+        path: "{{ cert_dir }}/{{fqdn}}.pem"
+        size: 2048
+        type: RSA
+
+    # It's not necesary but I used it to define further information of the certificate
+    - name: Create certificate signing request (CSR) for self-signed certificate
+      community.crypto.openssl_csr_pipe:
+        privatekey_path: "{{ cert_dir }}/{{fqdn}}.pem"
+        common_name: "{{fqdn}}"
+        organization_name: Unir PA Devops.
+        subject_alt_name:
+          - "DNS:{{ fqdn }}"
+          - "DNS:www.{{ fqdn }}"
+      register: csr
+
+    - name: Create self-signed certificate
+      community.crypto.x509_certificate:
+        path: "{{ cert_dir }}/{{fqdn}}.crt"
+        csr_content: "{{ csr.csr }}"
+        privatekey_path: "{{ cert_dir }}/{{fqdn}}.pem"
+        provider: selfsigned
+        selfsigned_not_after: "+365d"
+
+    - name: Create directory for nginx.conf
+      file:
+        path: "{{ conf_dir }}"
+        state: directory
+        mode: '0755'
+
+    # I Use a j2 template to create a custom nginx.conf
+    - name: Copy nginx.conf with HTTPS
+      template:
+        src: ../templates/nginx.conf.j2
+        dest: "{{ conf_dir }}/nginx.conf"
+        mode: '0644'
+
+    - name: Delete previous container if it exists
+      containers.podman.podman_container:
+        name: nginx-server
+        state: absent
+        delete_volumes: true
+
+    - name: Deploying NGINX container with HTTPS port 443
+      containers.podman.podman_container:
+        name: nginx-server
+        image: "{{ acr_registry }}/{{ acr_image }}"
+        state: started
+        restart_policy: always
+        publish:
+          - "80:80"
+          - "443:443"
+        volume:
+          - "{{ cert_dir }}/{{fqdn}}.crt:/etc/nginx/certs/{{fqdn}}.crt:ro"
+          - "{{ cert_dir }}/{{fqdn}}.pem:/etc/nginx/certs/{{fqdn}}.pem:ro"
+          - "{{ conf_dir }}/nginx.conf:/etc/nginx/nginx.conf:ro"
+        env:
+          SERVER_NAME: "{{ fqdn }}"
+          SSL_CERTIFICATE: "{{fqdn}}.crt"
+          SSL_CERTIFICATE_KEY: "{{fqdn}}.pem"
+        command: ["nginx", "-g", "daemon off;"]
