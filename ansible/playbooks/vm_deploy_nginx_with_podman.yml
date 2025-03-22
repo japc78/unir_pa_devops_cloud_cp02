@@ -1,0 +1,53 @@
+---
+- name: Deploy NGINX with HTTP
+  hosts: vm
+  become: true
+  collections:
+    - containers.podman
+
+  vars:
+    fqdn: "{{ vm_dns_name }}"
+    acr_registry: "{{ acr_admin_username }}.azurecr.io"
+    acr_username: "{{ acr_admin_username }}"
+    acr_password: "{{ acr_admin_password }}"
+    acr_image: server/unir-pa-devops-cp2-nginx:casopractico2
+
+  tasks:
+
+    - name: Install Podman
+      apt:
+        name: podman
+        state: present
+        update_cache: yes
+
+    - name: ACR login
+      containers.podman.podman_login:
+        registry: "{{ acr_registry }}"
+        username: "{{ acr_username }}"
+        password: "{{ acr_password }}"
+
+    - name: Pull imagen from ACR
+      containers.podman.podman_image:
+        name: "{{ acr_registry }}/{{ acr_image }}"
+        username: "{{ acr_username }}"
+        password: "{{ acr_password }}"
+        tls_verify: true
+        state: present
+
+    - name: Delete previous container if it exists
+      containers.podman.podman_container:
+        name: nginx-server
+        state: absent
+        delete_volumes: true
+
+    - name: Deploying NGINX container with HTTP port 80
+      containers.podman.podman_container:
+        name: nginx-server
+        image: "{{ acr_registry }}/{{ acr_image }}"
+        state: started
+        restart_policy: always
+        publish:
+          - "80:80"
+        env:
+          SERVER_NAME: "{{ fqdn }}"
+        command: ["nginx", "-g", "daemon off;"]
