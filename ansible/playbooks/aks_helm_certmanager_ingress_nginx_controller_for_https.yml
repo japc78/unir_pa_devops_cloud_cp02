@@ -1,6 +1,10 @@
 ---
 - name: Deploy cert-manager
   hosts: localhost
+
+  environment:
+    KUBECONFIG: "{{ aks_kube_config_path }}"
+
   tasks:
     - name: Ensure Helm is installed via Snap
       block:
