@@ -1,17 +1,17 @@
 resource "local_file" "inventory" {
   content  = local.inventory_content
-  filename = "${var.base_path}/ansible/inventories/inventory"
+  filename = "${var.base_path}/ansible/inventories/.inventory"
 }
 
 resource "local_file" "private_key" {
   content         = tls_private_key.vm_ssh_key.private_key_pem
-  filename        = "${var.base_path}/ansible/ssh_keys/vm_ssh_key.pem"
+  filename        = "${var.base_path}/ansible/ssh_keys/.vm_ssh_key.pem"
   file_permission = "0600"
 }
 
 resource "local_file" "kube_config" {
   content         = azurerm_kubernetes_cluster.aks.kube_config_raw
-  filename        = "${var.base_path}/ansible/kube_config/${azurerm_kubernetes_cluster.aks.name}.config"
+  filename        = "${var.base_path}/ansible/kube_config/.${azurerm_kubernetes_cluster.aks.name}.config"
   file_permission = "0600"
 }
 
