@@ -48,6 +48,3 @@
         restart_policy: always
         publish:
           - "80:80"
-        env:
-          SERVER_NAME: "{{ fqdn }}"
-        command: ["nginx", "-g", "daemon off;"]
