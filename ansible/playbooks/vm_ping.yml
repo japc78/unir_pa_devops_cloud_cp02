@@ -1,7 +1,8 @@
 ---
-- name:
+- name: Do ping to vm
   hosts: vm
 
+  # To verify connectivity with the VM; if it fails, it indicates connectivity or configuration issues (e.g., SSH inaccessible, incorrect keys, or host unavailable).
   tasks:
     - name: Do ping
       ansible.builtin.ping:

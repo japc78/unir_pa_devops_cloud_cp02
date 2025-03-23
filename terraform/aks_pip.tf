@@ -12,7 +12,6 @@ resource "azurerm_public_ip" "aks_pip" {
       name = "${var.prefix}aks-pip"
     }
   )
-
-# Dependencia explícita para asegurar que el clúster se crea primero y se puede asignar el rg del nodo
+# Explicit dependency to ensure the cluster is created first, allowing the node's resource group to be assigned.
   depends_on = [azurerm_kubernetes_cluster.aks]
 }

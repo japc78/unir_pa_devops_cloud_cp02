@@ -3,16 +3,17 @@
   hosts: localhost
   become: yes
   tasks:
+    # Ensures Podman is installed; if not, installs it.
     - name: Install Podman
       ansible.builtin.apt:
         name: podman
         state: present
         update_cache: yes
-
+    # Gathers information about installed packages on the system using the package_facts module.
     - name: Gather package facts
       ansible.builtin.package_facts:
         manager: apt
-
+    # Displays the installed Podman version and fails if Podman is not present.
     - name: Display Podman version
       ansible.builtin.debug:
         msg: "Podman version: {{ ansible_facts.packages['podman'][0].version }}"

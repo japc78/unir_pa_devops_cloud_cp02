@@ -30,5 +30,6 @@ resource "azurerm_linux_virtual_machine" "vm" {
     }
   )
 
+  # A dependency is established to ensure the key is available before creating the VM, preventing errors.
   depends_on = [ tls_private_key.vm_ssh_key ]
 }
